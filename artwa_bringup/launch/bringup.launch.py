@@ -37,7 +37,7 @@ def generate_launch_description():
     sllidar_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
-                [sllidar_pkg_share, "launch", "sllidar_a2m8_launch.py"]
+                [sllidar_pkg_share, "launch", "sllidar_a2m12_launch.py"]
             )
         ),
         launch_arguments={"use_sim_time": use_sim_time}.items(),
@@ -64,6 +64,7 @@ def generate_launch_description():
         output="screen",
         parameters=[{"use_sim_time": use_sim_time}],
         condition=IfCondition(use_rviz),
+    )
 
     # launch description 생성 및 반환
     return LaunchDescription(
