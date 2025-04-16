@@ -25,6 +25,31 @@ class UARTPublisher(Node):
         # differential drive 관련 파라미터
         self.track_width = 0.72  # [m]
         self.max_pwm = 255  # 모터에 줄 수 있는 최대 제어 값
+        
+        # 속도-모터 입력 변환 계수
+        self.a = 0.00529
+        self.b = 0.17530  # 수정된 b 값
+        
+        # 최대 속도 제한 (m/s)
+        self.max_velocity = 1.5  # 최대 속도 제한
+
+    def velocity_to_motor_input(self, velocity: float) -> int:
+        """
+        속도를 모터 입력값으로 변환
+        v = sign(u) × (a·|u| + b) 공식을 역으로 풀어서 계산
+        """
+        if abs(velocity) < 0.001:  # 매우 작은 속도는 0으로 처리
+            return 0
+        
+        # 최대 속도 제한 적용
+        sign_v = 1 if velocity > 0 else -1
+        limited_velocity = sign_v * min(abs(velocity), self.max_velocity)
+            
+        abs_u = (abs(limited_velocity) - self.b) / self.a
+        motor_input = int(sign_v * abs_u)
+        
+        # 모터 입력값 범위 제한
+        return max(min(motor_input, self.max_pwm), -self.max_pwm)
 
     def cmd_vel_callback(self, msg: Twist):
         self.latest_cmd_vel = msg
@@ -40,8 +65,12 @@ class UARTPublisher(Node):
         start_byte = 0xAA  # ✅ 패킷 시작 바이트
 
         # 최신 cmd_vel 값으로부터 모터 제어 값을 계산
-        x = int(self.latest_cmd_vel.linear.x)
-        y = int(self.latest_cmd_vel.linear.x)
+        # linear.x를 모터 입력값으로 변환
+        motor_input = self.velocity_to_motor_input(self.latest_cmd_vel.linear.x)
+        
+        # 양쪽 모터에 동일한 값을 전달 (직선 이동만 고려)
+        x = motor_input
+        y = motor_input
 
         # ✅ 패킷 패키징 (little-endian: <Bhh -> 1+2+2 bytes)
         message = struct.pack("<Bhh", start_byte, x, y)
