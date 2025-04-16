@@ -83,7 +83,7 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "map_filename",
-                default_value="/home/retia/map/map.pbstream",
+                default_value="/home/rail/test_map/map.pbstream",
                 description="Full path to map pbstream file to load",
             ),
             DeclareLaunchArgument(

@@ -14,10 +14,7 @@ def generate_launch_description():
     pkg_share = get_package_share_directory("artwa_navigation")
 
     use_sim_time = LaunchConfiguration("use_sim_time", default="false")
-    map_dir = LaunchConfiguration(
-        "map",
-        default="/home/retia/map/map.yaml",
-    )
+    map_dir = LaunchConfiguration("map")
 
     param_dir = LaunchConfiguration(
         "params_file",
@@ -42,7 +39,7 @@ def generate_launch_description():
         [
             DeclareLaunchArgument(
                 "map",
-                default_value=map_dir,
+                default_value="/home/rail/test_map.yaml",
                 description="Full path to map file to load",
             ),
             DeclareLaunchArgument(
