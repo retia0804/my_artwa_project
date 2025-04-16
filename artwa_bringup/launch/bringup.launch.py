@@ -2,26 +2,24 @@ from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
     """
-    ARTWA 로봇의 전체 시스템을 실행하기 위한 launch 파일
-    로봇 상태 발행, SLAM, 라이다를 함께 실행합니다.
+    ARTWA 로봇의 기본 시스템을 실행하기 위한 launch 파일
+    로봇 상태 발행, 라이다, RViz를 함께 실행합니다.
     """
     # 패키지 공유 디렉토리 경로 가져오기
     artwa_bringup_pkg_share = FindPackageShare("artwa_bringup").find("artwa_bringup")
-    artwa_slam_pkg_share = FindPackageShare("artwa_slam").find("artwa_slam")
+    artwa_description_pkg_share = FindPackageShare("artwa_description").find(
+        "artwa_description"
+    )
     sllidar_pkg_share = FindPackageShare("sllidar_ros2").find("sllidar_ros2")
 
     # launch 인자 선언
     use_sim_time = LaunchConfiguration("use_sim_time", default="false")
-    configuration_basename = LaunchConfiguration(
-        "configuration_basename", default="artwa_2d.lua"
-    )
-    load_state_filename = LaunchConfiguration("load_state_filename", default="")
-    save_state_filename = LaunchConfiguration("save_state_filename", default="")
 
     # state_publisher.launch.py 실행
     state_publisher_launch = IncludeLaunchDescription(
@@ -33,27 +31,36 @@ def generate_launch_description():
         launch_arguments={"use_sim_time": use_sim_time}.items(),
     )
 
-    # cartographer.launch.py 실행
-    cartographer_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [artwa_slam_pkg_share, "launch", "cartographer.launch.py"]
-            )
-        ),
-        launch_arguments={
-            "use_sim_time": use_sim_time,
-            "configuration_basename": configuration_basename,
-            "load_state_filename": load_state_filename,
-            "save_state_filename": save_state_filename,
-        }.items(),
-    )
-
-    # sllidar a2m8_launch.py 실행
+    # sllidar sllidar_a2m8_launch.py 실행
     sllidar_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            PathJoinSubstitution([sllidar_pkg_share, "launch", "a2m8_launch.py"])
+            PathJoinSubstitution(
+                [sllidar_pkg_share, "launch", "sllidar_a2m8_launch.py"]
+            )
         ),
         launch_arguments={"use_sim_time": use_sim_time}.items(),
+    )
+
+    # joint_state_publisher 노드
+    joint_state_publisher_node = Node(
+        package="joint_state_publisher",
+        executable="joint_state_publisher",
+        name="joint_state_publisher",
+        output="screen",
+        parameters=[{"use_sim_time": use_sim_time}],
+    )
+
+    # RViz2 시각화 노드
+    rviz_node = Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz2",
+        arguments=[
+            "-d",
+            PathJoinSubstitution([artwa_description_pkg_share, "rviz", "urdf.rviz"]),
+        ],
+        output="screen",
+        parameters=[{"use_sim_time": use_sim_time}],
     )
 
     # launch description 생성 및 반환
@@ -65,24 +72,10 @@ def generate_launch_description():
                 default_value="false",
                 description="Use simulation (Gazebo) clock if true",
             ),
-            DeclareLaunchArgument(
-                "configuration_basename",
-                default_value="artwa_2d.lua",
-                description="Configuration file basename for Cartographer",
-            ),
-            DeclareLaunchArgument(
-                "load_state_filename",
-                default_value="",
-                description="Load state from file if not empty",
-            ),
-            DeclareLaunchArgument(
-                "save_state_filename",
-                default_value="",
-                description="Save state to file if not empty",
-            ),
             # Launches
             state_publisher_launch,
-            cartographer_launch,
             sllidar_launch,
+            joint_state_publisher_node,
+            rviz_node,
         ]
     )

@@ -47,7 +47,7 @@ TRAJECTORY_BUILDER_2D.real_time_correlative_scan_matcher.rotation_delta_cost_wei
 TRAJECTORY_BUILDER_2D.submaps.num_range_data = 30
 POSE_GRAPH.optimize_every_n_nodes = 10
 POSE_GRAPH.constraint_builder.min_score = 0.65
-POSE_GRAPH.num_final_iterations = 1000
+POSE_GRAPH.max_num_final_iterations = 1000
 POSE_GRAPH.global_sampling_ratio = 0.005
 
 return options 

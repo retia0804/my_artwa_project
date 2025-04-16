@@ -1,33 +1,37 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, ExecuteProcess
+from launch.actions import (
+    IncludeLaunchDescription,
+    DeclareLaunchArgument,
+    ExecuteProcess,
+)
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import (
-    Command,
-    FindExecutable,
     LaunchConfiguration,
     PathJoinSubstitution,
+    PythonExpression,
 )
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
-from launch.conditions import IfCondition
+from launch.conditions import IfCondition, UnlessCondition
 
 
 def generate_launch_description():
     """
-    Cartographer SLAM을 실행하기 위한 launch 파일
-    로봇의 센서 데이터를 기반으로 지도를 생성하고 로봇의 위치를 추정합니다.
+    ARTWA 로봇의 localization 시스템을 실행하기 위한 launch 파일
+    Cartographer를 사용하여 pure localization을 수행합니다.
     """
     # 패키지 공유 디렉토리 경로 가져오기
-    slam_pkg_share = FindPackageShare("artwa_slam").find("artwa_slam")
+    artwa_slam_pkg_share = FindPackageShare("artwa_slam").find("artwa_slam")
 
-    # LaunchConfiguration을 통해 인자 값 가져오기
+    # launch 인자 선언
     use_sim_time = LaunchConfiguration("use_sim_time", default="false")
+    map_filename = LaunchConfiguration("map_filename")
     configuration_basename = LaunchConfiguration(
-        "configuration_basename", default="slam.lua"
+        "configuration_basename", default="localization.lua"
     )
     use_rviz = LaunchConfiguration("use_rviz", default="true")
 
-    # 노드 생성
-    # Cartographer 노드
+    # Cartographer pure localization 실행
     cartographer_node = Node(
         package="cartographer_ros",
         executable="cartographer_node",
@@ -36,14 +40,16 @@ def generate_launch_description():
         parameters=[{"use_sim_time": use_sim_time}],
         arguments=[
             "-configuration_directory",
-            PathJoinSubstitution([slam_pkg_share, "config"]),
+            PathJoinSubstitution([artwa_slam_pkg_share, "config"]),
             "-configuration_basename",
             configuration_basename,
+            "-load_state_filename",
+            map_filename,
         ],
     )
 
-    # Cartographer 지도 생성 노드
-    cartographer_occupancy_grid_node = Node(
+    # Cartographer occupancy grid 노드
+    occupancy_grid_node = Node(
         package="cartographer_ros",
         executable="cartographer_occupancy_grid_node",
         name="cartographer_occupancy_grid_node",
@@ -59,7 +65,7 @@ def generate_launch_description():
         name="rviz2",
         arguments=[
             "-d",
-            PathJoinSubstitution([slam_pkg_share, "rviz", "slam.rviz"]),
+            PathJoinSubstitution([artwa_slam_pkg_share, "rviz", "slam.rviz"]),
         ],
         output="screen",
         parameters=[{"use_sim_time": use_sim_time}],
@@ -69,15 +75,20 @@ def generate_launch_description():
     # launch description 생성 및 반환
     return LaunchDescription(
         [
-            # launch 인자 선언
+            # Launch arguments
             DeclareLaunchArgument(
                 "use_sim_time",
-                default_value=use_sim_time,
+                default_value="false",
                 description="Use simulation (Gazebo) clock if true",
             ),
             DeclareLaunchArgument(
+                "map_filename",
+                default_value="/home/retia/map/map.pbstream",
+                description="Full path to map pbstream file to load",
+            ),
+            DeclareLaunchArgument(
                 "configuration_basename",
-                default_value=configuration_basename,
+                default_value="localization.lua",
                 description="Configuration file basename for Cartographer",
             ),
             DeclareLaunchArgument(
@@ -87,7 +98,7 @@ def generate_launch_description():
             ),
             # Nodes
             cartographer_node,
-            cartographer_occupancy_grid_node,
+            occupancy_grid_node,
             rviz_node,
         ]
     )

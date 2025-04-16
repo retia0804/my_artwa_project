@@ -11,6 +11,8 @@
 
   <!-- Build dependencies -->
   <build_depend>artwa_description</build_depend>
+  <build_depend>cartographer</build_depend>
+  <build_depend>cartographer_ros</build_depend>
 
   <!-- Execution dependencies -->
   <exec_depend>cartographer</exec_depend>
