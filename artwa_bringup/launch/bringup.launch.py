@@ -4,6 +4,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
+from launch.conditions import IfCondition
 
 
 def generate_launch_description():
@@ -20,6 +21,7 @@ def generate_launch_description():
 
     # launch 인자 선언
     use_sim_time = LaunchConfiguration("use_sim_time", default="false")
+    use_rviz = LaunchConfiguration("use_rviz", default="false")
 
     # state_publisher.launch.py 실행
     state_publisher_launch = IncludeLaunchDescription(
@@ -61,7 +63,7 @@ def generate_launch_description():
         ],
         output="screen",
         parameters=[{"use_sim_time": use_sim_time}],
-    )
+        condition=IfCondition(use_rviz),
 
     # launch description 생성 및 반환
     return LaunchDescription(

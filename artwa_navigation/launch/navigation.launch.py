@@ -22,7 +22,7 @@ def generate_launch_description():
         "params_file",
         default=os.path.join(
             pkg_share,
-            "config",
+            "param",
             "nav2_params.yaml",
         ),
     )
