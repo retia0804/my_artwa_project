@@ -7,6 +7,7 @@ from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from launch.conditions import IfCondition
 
 
 def generate_launch_description():
@@ -26,6 +27,8 @@ def generate_launch_description():
             "nav2_params.yaml",
         ),
     )
+
+    use_rviz = LaunchConfiguration("use_rviz", default="false")
 
     nav2_launch_file_dir = os.path.join(pkg_share, "launch")
 
@@ -54,8 +57,13 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "slam",
-                default_value="False",
+                default_value="True",
                 description="Whether to run SLAM",
+            ),
+            DeclareLaunchArgument(
+                "use_rviz",
+                default_value="false",
+                description="Whether to launch RViz",
             ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
@@ -75,6 +83,7 @@ def generate_launch_description():
                 arguments=["-d", rviz_config_dir],
                 parameters=[{"use_sim_time": use_sim_time}],
                 output="screen",
+                condition=IfCondition(use_rviz),
             ),
         ]
     )
